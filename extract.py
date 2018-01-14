@@ -3,6 +3,7 @@ import re
 from datetime import datetime
 from collections import defaultdict
 import json
+import subprocess
 
 import maya
 import click
@@ -14,12 +15,13 @@ defaults_file = Path(__file__).parent / 'defaults.json'
 @click.command()
 @click.option('--title', default='', help='Title of book/document')
 @click.option('--date', help='Date from which you wish to start extraction')
-def main(title, date):
+@click.option('--no-clipboard', is_flag=True, default=False,
+              help='Do not copy clippings text to system clipboard')
+def main(title, date, no_clipboard):
     """
     Print all clippings text for given title, starting from given date.
 
     """
-    import ipdb; ipdb.set_trace()
     if not title:
         title = get_default_title()
     start_dt = maya.parse(date).datetime(naive=True)
@@ -34,15 +36,22 @@ def main(title, date):
 
     # Create map of titles to clips.
     titles = defaultdict(list)
-    for clip in get_clips('clippings.txt'):
+    for clip in get_clips(clippings_file):
         title = clip['title']
         titles[title].append(clip)
 
+    writer = ClippingsWriter(not no_clipboard)
     for clip in titles[title]:
         if clip['datetime'] > start_dt:
-            print(clip['body'] + '\n')
+            writer.write(clip['body'])
 
     write_defaults(title=title)
+
+    print(f'Found {writer.counter} clippings.')
+
+    if not no_clipboard:
+        writer.copy_to_clipboard()
+        print('\nCopied text to clipboard!')
 
 
 def get_default_title():
@@ -58,6 +67,12 @@ def write_defaults(title):
 
 
 def get_clips(clippings_file):
+    """
+    Get all clippings from given file as a sequence of dicts. Keys are:
+
+    title, attribution, type, datetime
+
+    """
     EOR = "=========="
     BOM = '\ufeff'
 
@@ -85,6 +100,30 @@ def get_clips(clippings_file):
                 record = list()
             else:
                 record.append(line.strip())
+
+
+class ClippingsWriter:
+    def __init__(self, copy_to_clipboard):
+        self.counter = 0
+        if copy_to_clipboard:
+            self.buffer = []
+        else:
+            self.buffer = None
+
+    def write(self, text):
+        self.counter += 1
+        print(text + '\n')
+        if self.buffer is not None:
+            self.buffer.append(text)
+
+    def copy_to_clipboard(self):
+        if sys.platform == 'darwin':
+            output = '\n\n'.join(self.buffer)
+            process = subprocess.Popen(
+                'pbcopy', env={'LANG': 'en_US.UTF-8'}, stdin=subprocess.PIPE)
+            process.communicate(output.encode('utf-8'))
+        else:
+            print(f'Copying to clipboard not yet supported on {sys.platform}')
 
 
 if __name__ == '__main__':
