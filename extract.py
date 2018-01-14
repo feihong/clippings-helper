@@ -4,6 +4,7 @@ from datetime import datetime
 from collections import defaultdict
 import json
 import subprocess
+import sys
 
 import maya
 import click
@@ -27,10 +28,11 @@ def main(title, date, no_clipboard):
     start_dt = maya.parse(date).datetime(naive=True)
 
     clippings_file = Path('/Volumes/Kindle/documents/My Clippings.txt')
-    clippings_file = Path('clippings.txt')
-    if not clippings_file.exists():
-        print('Kindle is not connected to your computer')
-        return
+    if not clippings_file.exists() and Path('clippings.txt').exists():
+        print('Kindle is not connected to your computer, using clippings.txt')
+        clippings_file = Path('clippings.txt')
+    else:
+        print('Please connect your Kindle to your computer')
 
     print()
 
@@ -47,7 +49,7 @@ def main(title, date, no_clipboard):
 
     write_defaults(title=title)
 
-    print(f'Found {writer.counter} clippings.')
+    speak(f'Found {writer.counter} clippings.')
 
     if not no_clipboard:
         writer.copy_to_clipboard()
@@ -124,6 +126,13 @@ class ClippingsWriter:
             process.communicate(output.encode('utf-8'))
         else:
             print(f'Copying to clipboard not yet supported on {sys.platform}')
+
+
+def speak(text):
+    print(text)
+    if sys.platform == 'darwin':
+        # Samantha is the default female English voice.
+        subprocess.call(['say', '-v', 'Samantha', text])
 
 
 if __name__ == '__main__':
