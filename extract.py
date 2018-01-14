@@ -2,9 +2,14 @@ from pathlib import Path
 import re
 from datetime import datetime
 from collections import defaultdict
+import json
 
 import maya
 import click
+
+
+defaults_file = Path(__file__).parent / 'defaults.json'
+
 
 @click.command()
 @click.option('--title', default='', help='Title of book/document')
@@ -14,6 +19,9 @@ def main(title, date):
     Print all clippings text for given title, starting from given date.
 
     """
+    import ipdb; ipdb.set_trace()
+    if not title:
+        title = get_default_title()
     start_dt = maya.parse(date).datetime(naive=True)
 
     clippings_file = Path('/Volumes/Kindle/documents/My Clippings.txt')
@@ -33,6 +41,20 @@ def main(title, date):
     for clip in titles[title]:
         if clip['datetime'] > start_dt:
             print(clip['body'] + '\n')
+
+    write_defaults(title=title)
+
+
+def get_default_title():
+    if defaults_file.exists():
+        return json.loads(defaults_file.read_text())['title']
+    else:
+        return None
+
+
+def write_defaults(title):
+    with defaults_file.open('w') as fp:
+        json.dump({'title': title}, fp)
 
 
 def get_clips(clippings_file):
