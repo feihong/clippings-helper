@@ -1,27 +1,37 @@
 from pathlib import Path
-import shutil
 import re
 from datetime import datetime
 from collections import defaultdict
 
 import maya
+import click
 
+@click.command()
+@click.option('--title', default='', help='Title of book/document')
+@click.option('--date', help='Date from which you wish to start extraction')
+def main(title, date):
+    """
+    Print all clippings text for given title, starting from given date.
 
-def main():
+    """
+    start_dt = maya.parse(date).datetime(naive=True)
+
     clippings_file = Path('/Volumes/Kindle/documents/My Clippings.txt')
+    clippings_file = Path('clippings.txt')
     if not clippings_file.exists():
         print('Kindle is not connected to your computer')
         return
 
-    shutil.copy(clippings_file, 'clippings.txt')
+    print()
 
+    # Create map of titles to clips.
     titles = defaultdict(list)
     for clip in get_clips('clippings.txt'):
         title = clip['title']
         titles[title].append(clip)
 
-    for clip in titles['明朝那些事儿1']:
-        if clip['datetime'] > datetime(2018, 1, 8):
+    for clip in titles[title]:
+        if clip['datetime'] > start_dt:
             print(clip['body'] + '\n')
 
 
