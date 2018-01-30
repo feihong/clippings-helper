@@ -28,11 +28,13 @@ def main(title, date, no_clipboard):
     start_dt = maya.parse(date).datetime(naive=True)
 
     clippings_file = Path('/Volumes/Kindle/documents/My Clippings.txt')
-    if not clippings_file.exists() and Path('clippings.txt').exists():
-        print('Kindle is not connected to your computer, using clippings.txt')
-        clippings_file = Path('clippings.txt')
-    else:
-        print('Please connect your Kindle to your computer')
+    if not clippings_file.exists():
+        if Path('clippings.txt').exists():
+            print('Kindle is not connected to your computer, using clippings.txt')
+            clippings_file = Path('clippings.txt')
+        else:
+            print('Please connect your Kindle to your computer')
+            return
 
     print()
 
