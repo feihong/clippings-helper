@@ -36,13 +36,13 @@ def main(title, date, no_clipboard):
             print('Please connect your Kindle to your computer')
             return
 
-    print()
+    print(f'Retrieving clippings from {title}, starting from {start_dt}\n')
 
     # Create map of titles to clips.
     titles = defaultdict(list)
     for clip in get_clips(clippings_file):
-        title = clip['title']
-        titles[title].append(clip)
+        key = clip['title']
+        titles[key].append(clip)
 
     writer = ClippingsWriter(not no_clipboard)
     for clip in titles[title]:
